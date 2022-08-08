@@ -1,7 +1,7 @@
 // Oh Jeez, Oh No, My Rabbits Are Gone!!!
 // Autosplitter by duncathan_salt
 
-state("MyRabbitsAreGone") {
+state("MyRabbitsAreGone", "1.3.1.2") {
     double roomId : 0x004DBA74, 0x2C, 0x10, 0x654, 0x250;
 
     double normalEnd : 0x004DBA74, 0x2C, 0x10, 0x654, 0x270;
@@ -13,6 +13,20 @@ state("MyRabbitsAreGone") {
     double playerState : 0x004DBA74, 0x2C, 0x10, 0x654, 0x1D0;
     double playerX : 0x004DBA74, 0x2C, 0x10, 0x654, 0x200;
     double playerY : 0x004DBA74, 0x2C, 0x10, 0x654, 0x1F0;
+}
+
+state("MyRabbitsAreGone", "1.3.1.3") {
+    double roomId : 0x003829c, 0x7c, 0xac, 0x24, 0xd80;
+
+    double normalEnd : 0x003829c, 0x7c, 0xac, 0x24, 0xda0;
+    double trueEnd : 0x003829c, 0x7c, 0xac, 0x24, 0xd90;
+
+    double magnetX : 0x003829c, 0x7c, 0xac, 0x24, 0xd60;
+    double magnetY : 0x003829c, 0x7c, 0xac, 0x24, 0xd50;
+
+    double playerState : 0x003829c, 0x7c, 0xac, 0x24, 0xd00;
+    double playerX : 0x003829c, 0x7c, 0xac, 0x24, 0xd30;
+    double playerY : 0x003829c, 0x7c, 0xac, 0x24, 0xd20;   
 }
 
 startup {
@@ -49,6 +63,21 @@ startup {
 }
 
 init {
+    string MD5Hash;
+    using (var md5 = System.Security.Cryptography.MD5.Create())
+        using (var s = File.Open(modules.First().FileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            MD5Hash = md5.ComputeHash(s).Select(x => x.ToString("X2")).Aggregate((a, b) => a + b);
+    switch (MD5Hash)
+    {
+        case "E5CEDC05FAD16B9954499167623C4501": // steam
+        case "3001F1AC3947DEB328280891CB79DB8B": // itch
+            version = "1.3.1.3";
+            break;
+        default:
+            version = "1.3.1.2";
+            break;
+    }
+
     print("Connecting...");
 
     vars.triggeredSplits = new List<string>();
