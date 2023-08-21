@@ -2,6 +2,8 @@
 // Autosplitter by duncathan_salt
 
 state("MyRabbitsAreGone", "1.3.1.2") {
+    // int magic : 0x004DBA74, 0x2C, 0x10, 0x654, 0x280; // 24032403
+
     double roomId : 0x004DBA74, 0x2C, 0x10, 0x654, 0x250;
 
     double normalEnd : 0x004DBA74, 0x2C, 0x10, 0x654, 0x270;
@@ -16,6 +18,8 @@ state("MyRabbitsAreGone", "1.3.1.2") {
 }
 
 state("MyRabbitsAreGone", "1.3.1.3") {
+    // int magic : 0x003829c, 0x7c, 0xac, 0x24, 0xdb0; // 24032403
+
     double roomId : 0x003829c, 0x7c, 0xac, 0x24, 0xd80;
 
     double normalEnd : 0x003829c, 0x7c, 0xac, 0x24, 0xda0;
@@ -26,7 +30,23 @@ state("MyRabbitsAreGone", "1.3.1.3") {
 
     double playerState : 0x003829c, 0x7c, 0xac, 0x24, 0xd00;
     double playerX : 0x003829c, 0x7c, 0xac, 0x24, 0xd30;
-    double playerY : 0x003829c, 0x7c, 0xac, 0x24, 0xd20;   
+    double playerY : 0x003829c, 0x7c, 0xac, 0x24, 0xd20;
+}
+
+state("MyRabbitsAreGone", "1.3.1.4") {
+    // int magic : 0x004dba78, 0x2c, 0x10, 0x75c, 0x1e0; // 24032403
+
+    double roomId : 0x004dba78, 0x2c, 0x10, 0x75c, 0x1b0;
+
+    double normalEnd : 0x004dba78, 0x2c, 0x10, 0x75c, 0x1d0;
+    double trueEnd : 0x004dba78, 0x2c, 0x10, 0x75c, 0x1c0;
+
+    double magnetX : 0x004dba78, 0x2c, 0x10, 0x75c, 0x190;
+    double magnetY : 0x004dba78, 0x2c, 0x10, 0x75c, 0x180;
+
+    double playerState : 0x004dba78, 0x2c, 0x10, 0x75c, 0x130;
+    double playerX : 0x004dba78, 0x2c, 0x10, 0x75c, 0x160;
+    double playerY : 0x004dba78, 0x2c, 0x10, 0x75c, 0x150;
 }
 
 startup {
@@ -45,7 +65,7 @@ startup {
     settings.Add("SplitNightForestExit", true, "Exit Night Forest", "SplitExit");
     settings.Add("SplitNightCaveExit", true, "Exit Night Cave", "SplitExit");
     settings.Add("SplitNightPlateauExit", true, "Exit Night Plateau", "SplitExit");
-    
+
     settings.Add("SplitEnter", false, "Split When Entering");
     settings.Add("SplitPlateau", true, "Enter Cave Transition", "SplitEnter");
     settings.Add("SplitCave", true, "Enter Forest Transition", "SplitEnter");
@@ -69,6 +89,9 @@ init {
             MD5Hash = md5.ComputeHash(s).Select(x => x.ToString("X2")).Aggregate((a, b) => a + b);
     switch (MD5Hash)
     {
+        case "24F8201948B12E14C73591F536BB4BF6": // steam
+            version = "1.3.1.4";
+            break;
         case "E5CEDC05FAD16B9954499167623C4501": // steam
         case "3001F1AC3947DEB328280891CB79DB8B": // itch
             version = "1.3.1.3";
@@ -82,7 +105,7 @@ init {
 
     vars.triggeredSplits = new List<string>();
     vars.PrevPhase = null;
-    
+
     Func<string, bool> trySplit = (split) => {
         print("Attempting split: " + split);
         if (!settings[split]) { print("Failure (settings)"); return false; }
@@ -95,10 +118,11 @@ init {
         return false;
     };
     vars.trySplit = trySplit;
-    
+
     Func<dynamic, double, double, bool> checkMagnet = (_current, x, y) => {
-        print("Checking magnet: " + x.ToString() + "," + y.ToString());
-        return _current.playerState == vars.states["state_player_cutscene"] && _current.magnetX == x && _current.magnetY == y;
+        bool inCutscene = _current.playerState == vars.states["state_player_cutscene"] || _current.playerState == vars.states["state_player_entering"];
+        print("Checking magnet: (" + x.ToString() + "," + y.ToString() + ")? (" + _current.magnetX.ToString() + "," + _current.magnetY.ToString() + ")");
+        return inCutscene && _current.magnetX == x && _current.magnetY == y;
     };
     vars.checkMagnet = checkMagnet;
 
@@ -107,12 +131,18 @@ init {
         return _current.roomId == vars.rooms[newmap] && _old.roomId == vars.rooms[oldmap];
     };
     vars.mapTransition = mapTransition;
-    
+
     // states
     vars.states = new Dictionary<string, double>();
     vars.states["state_player_cutscene"] = 41;
     vars.states["state_player_entering"] = 53;
     vars.states["state_player_jump"] = 44;
+
+    if (version == "1.3.1.4") {
+        vars.states["state_player_cutscene"] = 43;
+        vars.states["state_player_entering"] = 55;
+        vars.states["state_player_jump"] = 46;
+    }
 
     // rooms
     vars.rooms = new Dictionary<string, double>();
@@ -124,7 +154,7 @@ init {
     vars.rooms["rm_c1"] = 6;
     vars.rooms["rm_f1"] = 15;
     vars.rooms["rm_l1"] = 19;
-    
+
     vars.rooms["rm_cavetransition"] = 9;
     vars.rooms["rm_foresttransition"] = 17;
     vars.rooms["rm_laketransition"] = 18;
@@ -230,7 +260,7 @@ split {
             toSplit |= vars.trySplit("SplitNightPlateau");
         }
     }
-    
+
     // endings
     if (current.normalEnd == 1) {
         toSplit |= vars.trySplit("SplitNormalEnd");
